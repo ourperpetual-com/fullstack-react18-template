@@ -21,13 +21,16 @@ cd my-project
 # 2. Start all services
 docker-compose up --build
 
-# 3. Open your applications
+# 3. Initialize database
+docker-compose exec backend node -e "require('./src/models').initializeDatabase()"
+
+# 4. Open your applications
 # Frontend: http://localhost:3000
 # Backend:  http://localhost:3001  
 # Database: localhost:5432
 ```
 
-**That's it!** Your full-stack application is running.
+**That's it!** Your full-stack application is running with a working API!
 
 ## 📦 What's Included
 
@@ -38,10 +41,12 @@ docker-compose up --build
 - ✅ Production build optimization
 
 ### Backend (Node.js 18)
-- ✅ Express.js framework
-- ✅ CORS configured
+- ✅ Modern RESTful API architecture
+- ✅ Controller-Route-Middleware pattern
+- ✅ CORS & Security headers (Helmet)
 - ✅ Database connection setup
-- ✅ RESTful API structure
+- ✅ Error handling and logging
+- ✅ 8 working API endpoints
 
 ### Database (PostgreSQL 13)
 - ✅ Containerized database
@@ -84,39 +89,72 @@ const createTables = async () => {
 
 ### Add API Routes
 ```javascript
-// backend/routes/api.js
-router.get('/api/users', async (req, res) => {
-  const users = await db.query('SELECT * FROM users');
-  res.json(users.rows);
-});
+// backend/src/controllers/myController.js
+const myController = {
+  async getItems(req, res, next) {
+    try {
+      const { rows } = await db.query('SELECT * FROM items');
+      res.json({ success: true, data: rows });
+    } catch (error) {
+      next(error);
+    }
+  }
+};
+
+// backend/src/routes/items.js
+router.get('/', myController.getItems);
 ```
 
 ## 📁 Project Structure
 
 ```
 your-project/
-├── frontend/              # React application
+├── frontend/                   # React 18 application
 │   ├── src/
-│   │   ├── App.js        # Main React component
-│   │   └── index.js      # React 18 root
-│   ├── package.json      # Frontend dependencies
-│   └── Dockerfile        # Frontend container
-├── backend/               # Node.js API
-│   ├── routes/
-│   │   ├── index.js      # Default routes
-│   │   └── users.js      # User routes
-│   ├── app.js            # Express app
-│   ├── db.js             # Database connection
-│   └── Dockerfile        # Backend container
-├── docker-compose.yml     # Container orchestration
-└── README.md             # This file
+│   │   ├── App.js             # Main React component
+│   │   └── index.js           # React 18 root
+│   ├── package.json           # Frontend dependencies
+│   └── Dockerfile             # Frontend container
+├── backend/                    # Modern RESTful API
+│   ├── src/
+│   │   ├── controllers/       # Business logic
+│   │   ├── routes/           # API endpoints
+│   │   ├── models/           # Database schema & utilities
+│   │   ├── middleware/       # Auth, validation (ready)
+│   │   ├── services/         # External services (ready)
+│   │   └── utils/            # Helper functions (ready)
+│   ├── app.js                 # Express app configuration
+│   ├── server.js              # Server startup
+│   ├── db.js                  # Database connection
+│   ├── package.json           # Backend dependencies
+│   └── Dockerfile             # Backend container
+├── docker-compose.yml          # Container orchestration
+└── README.md                  # This file
 ```
+
+## 🔗 API Endpoints
+
+The template includes 8 working API endpoints:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/api` | API status and database info |
+| GET | `/api/endpoints` | List all available endpoints |
+| GET | `/api/users` | Get all users |
+| GET | `/api/users/:id` | Get user by ID |
+| POST | `/api/users` | Create new user |
+| PUT | `/api/users/:id` | Update user |
+| DELETE | `/api/users/:id` | Delete user |
 
 ## 🔧 Development
 
 ```bash
 # Start development environment
-docker-compose up
+docker-compose up --build
+
+# Initialize database (run once)
+docker-compose exec backend node -e "require('./src/models').initializeDatabase()"
 
 # Rebuild after dependency changes
 docker-compose build --no-cache
@@ -126,7 +164,12 @@ docker-compose logs frontend
 docker-compose logs backend
 
 # Access database directly
-docker-compose exec db psql -U postgres
+docker-compose exec db psql -U postgres -d myapp
+
+# Test API endpoints
+curl http://localhost:3001/health
+curl http://localhost:3001/api
+curl http://localhost:3001/api/users
 
 # Stop all services
 docker-compose down
